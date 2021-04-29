@@ -2,8 +2,8 @@ Role Name: ansible-sample-app
 =========
 ###Pre-requirements
 ---------
-**Ansible 2.9 - ```sudo apt-get install ansible```
-**Boto3 - ```$python2 -m pip install boto3```
+##Ansible 2.9 - ```sudo apt-get install ansible```
+##Boto3 - ```$python2 -m pip install boto3```
 =========
 ###Host Inventory Tags
 ---------
