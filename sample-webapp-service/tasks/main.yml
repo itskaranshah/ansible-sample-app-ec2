@@ -27,6 +27,7 @@
           - mkdir /etc/systemd/system/nginx.service.d
           - printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
           - systemctl daemon-reload
+        ignore_errors: yes
       - name: Install nginx
         apt:
           name: nginx
@@ -40,30 +41,43 @@
           owner: root
           group: root
         notify: restart_nginx
+      - meta: flush_handlers
     when: ansible_facts['distribution'] == 'Ubuntu'
     become: yes
+    always:
+      - name: Nginx service Status
+        when: server_avaliable is succeeded
+        shell: |
+          systemctl status nginx | grep 'Active:\|Loaded:\|Failed'
+        register: result_out
+      - name: Nginx service Status output
+        debug: var=result_out.stdout_lines
+    rescue:
+# Some fallback tasks can be added in this section
+      - name: Deployment failure
+        fail:
+          msg : |
+            Service deployment failed.
+        when: 
+          - 'result_out.stdout.find("Failed") == 1'
 #------------------------------------------
-  - meta: flush_handlers
+#Need to verify 'error- missing module - ec2_instance_info'
+  # - name: Get ec2_info
+  #   delegate_to: localhost
+  #   ec2_instance_info:
+  #     filters: 
+  #       addresses.association.public-ip : '{{ inventory_hostname }}'
+  #   register: instance_result
+  # - name: Nginx service Status output
+  #   debug: var=instance_result.stdout
 
-  - name: Nginx service Status
-#    when: server_avaliable is succeeded
-    shell: |
-      systemctl status nginx | grep 'Active:\|Loaded:\|Failed'
-    register: result_out
-  - name: Nginx service Status output
-    debug: var=result_out.stdout_lines
-  - name: Deployment failure
-    fail:
-      msg : |
-        Service deployment failed.
-    when: 
-      - 'result_out.stdout.find("Failed") == 1'
-  # - name: Remove provision tag
+  # - name: Remove provision tag upon success
+  #   connection: local
+  #   delegate_to: localhost
   #   ec2_tag:
   #     region: us-east-1
-  #     resource: '{{ item.id }}'
+  #     resource: '{{ item.attachment.instance_id }}'
   #     tags:
   #       provision_state:
   #     state: absent
-  #   with_items: '{{ ec2.instances }}'
-    
+  #   with_items: '{{ instances_result.instances }}'
