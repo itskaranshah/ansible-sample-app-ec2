@@ -1,0 +1,10 @@
+- name: Launch new ec2 when tag == create_ec2
+  import_tasks: create-ec2.yml
+
+- name: ping each instance
+  delegate_to: localhost
+  ping: '{{item}}'
+  loop: "{{groups['launched']}}"
+
+- name: Refresh inventory to ensure new instaces exist in inventory
+  meta: refresh_inventory

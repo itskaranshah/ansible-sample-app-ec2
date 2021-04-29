@@ -1,0 +1,30 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Launch ec2 instance
+      block:  
+        - name: Launch new ec2 instance
+          include_role: 
+            name: sample-webapp-create-ec2
+        - set_fact:
+            ec2: '{{ ec2.instances }}'
+      tags: ['never', 'create_ec2']
+
+- hosts: 'env_{{env}}:&srv_{{service}}:&new'
+  gather_facts: yes
+  remote_user: ubuntu
+  become_method: sudo
+  pre_tasks:
+#    - debug: var='{{ hostvars.localhost.ec2 }}'
+    - name: Refresh inventory to ensure new instances exist in inventory
+      meta: refresh_inventory
+    - name: Set Role Environment Variables
+      set_fact:
+        ansible_python_interpreter: /usr/bin/python3
+#        ec2: '{{ hostvars.localhost.ec2 }}'
+  tasks:
+    - name: Provision service
+      import_role: 
+        name: sample-webapp-service
+      tags: always

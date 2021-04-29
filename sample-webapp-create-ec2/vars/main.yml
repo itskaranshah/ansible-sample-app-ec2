@@ -1,0 +1,6 @@
+---
+# vars file for ansible-sample-app
+ec2_image:
+  ubuntu : ami-013f17f36f8b1fefb
+ec2_key:
+  dev: Play

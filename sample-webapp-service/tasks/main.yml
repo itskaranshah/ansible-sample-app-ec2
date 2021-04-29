@@ -1,0 +1,69 @@
+---
+#{{ ec2_images[ubuntu] }}
+# tasks file for ansible-sample-app
+#  tasks:
+  - name: Ping Host
+    become: no
+    delegate_to: localhost
+    command: ping -c 2 {{ inventory_hostname }}
+    register: server_avaliable
+  
+  - name:  Install System Packages
+    become: yes
+    apt:
+      name: '{{ item }}'
+      state: present
+      force_apt_get: yes
+      update_cache: yes
+    loop:
+      - htop
+
+#--------- Nginx service setup ------------
+  - name: Nginx service and site setup 
+    block:
+      - name: preinstall_nginx_fix
+        shell: "{{ item }}"
+        loop:
+          - mkdir /etc/systemd/system/nginx.service.d
+          - printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
+          - systemctl daemon-reload
+      - name: Install nginx
+        apt:
+          name: nginx
+          state: present
+        notify: restart_nginx
+      - name: Create index.html
+        template:
+          src: site-index-html.j2
+          dest: "/var/www/html/index.html"
+          mode: '0744'
+          owner: root
+          group: root
+        notify: restart_nginx
+    when: ansible_facts['distribution'] == 'Ubuntu'
+    become: yes
+#------------------------------------------
+  - meta: flush_handlers
+
+  - name: Nginx service Status
+#    when: server_avaliable is succeeded
+    shell: |
+      systemctl status nginx | grep 'Active:\|Loaded:\|Failed'
+    register: result_out
+  - name: Nginx service Status output
+    debug: var=result_out.stdout_lines
+  - name: Deployment failure
+    fail:
+      msg : |
+        Service deployment failed.
+    when: 
+      - 'result_out.stdout.find("Failed") == 1'
+  # - name: Remove provision tag
+  #   ec2_tag:
+  #     region: us-east-1
+  #     resource: '{{ item.id }}'
+  #     tags:
+  #       provision_state:
+  #     state: absent
+  #   with_items: '{{ ec2.instances }}'
+    

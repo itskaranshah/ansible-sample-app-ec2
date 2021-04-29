@@ -1,0 +1,27 @@
+---
+# Ec2 dynamic inventory yaml
+
+plugin: aws_ec2
+aws_profile: default
+regions:
+  - us-east-1
+hostnames:
+  - network-interface.addresses.association.public-ip
+#  - private-ip-address
+filters:
+# Only instances in state=running and having tag key environment
+  instance-state-name: running
+keyed_groups:
+# Groups host with tag key 'environment' into tag_dev, tag_prod etc
+  - prefix: env
+    key: tags['environment']
+    parent_group: environments
+    #parent_group: unprovisioned
+  - prefix: srv
+    key: tags['service']
+    parent_group: services
+  - key: tags.provision_state
+    separator: ''
+compose:
+  ansible_host: public_ip_address
+#  ansible_host: private_ip_address
