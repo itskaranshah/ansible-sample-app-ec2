@@ -22,6 +22,12 @@ keyed_groups:
     parent_group: services
   - key: tags.provision_state
     separator: ''
+#if an EC2 tag:Name is dev_machine01 it will be converted to tags_dev_machine01
+#which can then be passed as a variable value for the host via -e flag   
+  - key: tags
+    prefix: tag 
+  - key: 'security_groups|json_query("[].group_id")'
+    prefix: 'security_groups'
 compose:
   ansible_host: public_ip_address
 #  ansible_host: private_ip_address
